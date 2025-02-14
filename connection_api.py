@@ -1,5 +1,5 @@
 import requests
-# Public API base URL
+# Public API base URL from which we can access data required
 base_url = "https://pokeapi.co/api/v2"
 
 # Defining a function to get the required data
@@ -23,3 +23,8 @@ if pokemon_info:
     print(f"{pokemon_info['id']}")
     print(f"{pokemon_info['height']}")
     print(f"{pokemon_info['weight']}")
+    
+#output:name:pikachu
+#       id: 25
+#       height:4
+#       weight
