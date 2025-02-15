@@ -18,7 +18,7 @@ def get_weather():
     params = {
         'q': city,
         'appid': API_KEY,
-        'units': 'metric'  # Get temperature in Celsius
+        'units': 'metric'  
     }
 
     response = requests.get(BASE_URL, params=params)
