@@ -1,27 +1,101 @@
-#!pip install bs4
-#!pip install requests
-#!pip install pandas
 from bs4 import BeautifulSoup
 import requests
 import pandas as pd
-URL="https://www.amazon.com/Sceptre-24-5-inch-DisplayPort-Speakers-C255B-FWT240/dp/B0BTKJFRDV/ref=sr_1_5?crid=30WTFDTNJHX98&dib=eyJ2IjoiMSJ9.Fsgv9OL72WlabSdiV43H9kKH-hD8lrhRgQzZEunkMujxgqWrs6uNY3zHxbTtkAT8c27xYNTmaUbwoJQSHqR5IMQAk5ALp_E0En_znLZl06ts9pgVwAU7CSG4gTgG4SuqRhgDlj4rQEIrb0UHhK3a1ajgrsW4kA79L24vUscE49rGXB-r49dp0IXCS-OXcoPjUzODrs-0ntoONQYM75IXzPGoE_grvaDEofV5-cdaGj0e7WNdUbUL4RdpItzqroCZ29WUGgAz-Foj10SPlH7nOd8cePphjeuXl9mynpPwVhACgt6SvMTE64I-bJMhSyQl6IMwzDns7jQrC_AARugUf6Wnzydjqp0UH4n60WF3eew2fLhYd73gPGJprUlTqxt-5-z9w0z8MbNFQ-emtwHgSC6n8WYj_58wVCo-lph_BkVZf2IkXTtztPvmc-kU8n8E.I75sPnnr6_KtS5NVrz4Umqm6snJWKoD52rWa1zi1lzg&dib_tag=se&keywords=gaming&qid=1739794432&sprefix=gaming%2Caps%2C340&sr=8-5&th=1"
-#headers for requests
-HEADERS = ({ 'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36','Accept-Language':'en-US,en;q=0.5'})
-#HTTP REQUEST
-webpage=requests.get(URL,headers=HEADERS)
-# soup object containg all data
-soup=BeautifulSoup(webpage.content,"html.parser")
-#fetch links as List of tag objects
-links=soup.find_all("a",attrs={'class':'a-link-normal'})
-link=links[0].get('href')
-product_list="https://amazon.com"+link
-product_list
-#HTTP REQUEST
-new_webpage=requests.get(URL,headers=HEADERS)
-new_webpage
-new_soup=BeautifulSoup(webpage.content,"html.parser")
-new_soup
-new_soup.find('span',attrs={"id":'productTitle'}).text.strip()
-new_soup.find('span',attrs={"class":'a-price-whole'}).text.strip()
-new_soup.find('span',attrs={"class":'a-icon-alt'}).text
+import numpy as np
 
+# Function to extract Product Title
+def get_title(soup):
+    try:
+        title = soup.find("span", attrs={"id": 'productTitle'})
+        title_value = title.text
+        title_string = title_value.strip()
+    except AttributeError:
+        title_string = ""
+    return title_string
+
+# Function to extract Product Price
+def get_price(soup):
+    try:
+        price = soup.find("span", attrs={'id': 'priceblock_ourprice'}).string.strip()
+    except AttributeError:
+        try:
+            price = soup.find("span", attrs={'id': 'priceblock_dealprice'}).string.strip()
+        except:
+            price = ""
+    return price
+
+# Function to extract Product Rating
+def get_rating(soup):
+    try:
+        rating = soup.find("i", attrs={'class': 'a-icon a-icon-star a-star-4-5'}).string.strip()
+    except AttributeError:
+        try:
+            rating = soup.find("span", attrs={'class': 'a-icon-alt'}).string.strip()
+        except:
+            rating = ""
+    return rating
+
+# Function to extract Number of User Reviews
+def get_review_count(soup):
+    try:
+        review_count = soup.find("span", attrs={'id': 'acrCustomerReviewText'}).string.strip()
+    except AttributeError:
+        review_count = ""
+    return review_count
+
+# Function to extract Availability Status
+def get_availability(soup):
+    try:
+        available = soup.find("div", attrs={'id': 'availability'})
+        available = available.find("span").string.strip()
+    except AttributeError:
+        available = "Not Available"
+    return available
+
+if __name__ == '__main__':
+    # Add your user agent
+    HEADERS = ({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US, en;q=0.5'
+    })
+
+    # The webpage URL
+    URL = "https://www.amazon.com/s?k=playstation+4&ref=nb_sb_noss_2"
+
+    # HTTP Request
+    webpage = requests.get(URL, headers=HEADERS)
+
+    # Soup Object containing all data
+    soup = BeautifulSoup(webpage.content, "html.parser")
+
+    # Fetch links as List of Tag Objects
+    links = soup.find_all("a", attrs={'class': 'a-link-normal s-no-outline'})
+
+    # Store the links
+    links_list = []
+
+    # Loop for extracting links from Tag Objects
+    for link in links:
+        links_list.append(link.get('href'))
+
+    d = {"title": [], "price": [], "rating": [], "reviews": [], "availability": []}
+
+    # Loop for extracting product details from each link
+    for link in links_list:
+        new_webpage = requests.get("https://www.amazon.com" + link, headers=HEADERS)
+        new_soup = BeautifulSoup(new_webpage.content, "html.parser")
+
+        # Function calls to display all necessary product information
+        d['title'].append(get_title(new_soup))
+        d['price'].append(get_price(new_soup))
+        d['rating'].append(get_rating(new_soup))
+        d['reviews'].append(get_review_count(new_soup))
+        d['availability'].append(get_availability(new_soup))
+
+    amazon_df = pd.DataFrame.from_dict(d)
+    amazon_df['title'].replace('', np.nan, inplace=True)
+    amazon_df = amazon_df.dropna(subset=['title'])
+    amazon_df.to_csv("amazon_data.csv", header=True, index=False)
+    
+    # Print the dataframe to verify the result
+    print(amazon_df)
