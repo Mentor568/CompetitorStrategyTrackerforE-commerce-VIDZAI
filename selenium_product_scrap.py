@@ -59,8 +59,8 @@ if __name__ == '__main__':
         'Accept-Language': 'en-US, en;q=0.5'
     })
 
-    # The webpage URL
-    URL = "https://www.amazon.com/s?k=playstation+4&ref=nb_sb_noss_2"
+    # The webpage URL for power banks
+    URL = "https://www.amazon.com/s?k=power+bank&ref=nb_sb_noss_2"
 
     # HTTP Request
     webpage = requests.get(URL, headers=HEADERS)
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     amazon_df = pd.DataFrame.from_dict(d)
     amazon_df['title'].replace('', np.nan, inplace=True)
     amazon_df = amazon_df.dropna(subset=['title'])
-    amazon_df.to_csv("amazon_data.csv", header=True, index=False)
+    amazon_df.to_csv("amazon_power_banks.csv", header=True, index=False)
     
     # Print the dataframe to verify the result
     print(amazon_df)
