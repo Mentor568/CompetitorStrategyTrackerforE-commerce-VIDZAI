@@ -23,7 +23,7 @@ def get_product_price(driver, site, product):
     return price
 
 def main():
-    product = input("Enter product name: ")
+    product = input("realme phones ")
     sites = [
         "https://www.amazon.com", 
         "https://www.flipkart.com", 
