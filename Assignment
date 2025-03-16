@@ -1,0 +1,83 @@
+import json
+import time
+import random
+
+# Chatbot class with parameters
+class ChatBox:
+    def __init__(self, temperature=0.5, max_tokens=50, stream=False):
+        self.temperature = temperature  # Controls randomness
+        self.max_tokens = max_tokens    # Max length of output
+        self.stream = stream            # Whether to stream output or not
+        self.history = []               # To store conversation history
+
+    # Generate a dummy AI response based on temperature
+    def generate_response(self, prompt):
+        responses = [
+            "Sure, I can help with that!",
+            "That's an interesting question.",
+            "Let me think about it...",
+            "I'm not sure, but I can try to find out.",
+            "Here's what I know!"
+        ]
+
+        # Temperature affects randomness
+        if self.temperature > 0.7:
+            response = random.choice(responses)
+        else:
+            response = responses[0]
+
+        # Limit the length (simulate token limit)
+        response = response[:self.max_tokens]
+
+        return response
+
+    # Stream output character by character
+    def stream_output(self, response):
+        for char in response:
+            print(char, end='', flush=True)
+            time.sleep(0.05)
+        print()  # New line after streaming
+
+    # JSON response format
+    def format_response(self, prompt, response):
+        return json.dumps({
+            "prompt": prompt,
+            "response": response,
+            "tokens_used": len(response.split()),
+            "temperature": self.temperature
+        }, indent=4)
+
+    # Start chat session
+    def chat(self):
+        print(" Welcome to ChatBox! Type 'exit' to leave.\n")
+
+        while True:
+            prompt = input("You: ").strip()
+
+            if prompt.lower() == 'exit':
+                print("🤖 ChatBox: Goodbye!")
+                break
+
+            response = self.generate_response(prompt)
+            self.history.append({"prompt": prompt, "response": response})
+
+            # Stream or normal output
+            if self.stream:
+                print(" ChatBox (streaming): ", end='')
+                self.stream_output(response)
+            else:
+                print(f" ChatBox: {response}")
+
+            # JSON response example
+            json_response = self.format_response(prompt, response)
+            print("\nJSON Response:\n", json_response)
+            print("-" * 50)
+
+# Create ChatBox instance with parameters
+if __name__ == "__main__":
+    chatbox = ChatBox(
+        temperature=0.8,    # More creative
+        max_tokens=40,      # Limit response length
+        stream=True         # Enable stream mode
+    )
+    chatbox.chat()
