@@ -1,0 +1,10 @@
+Title:
+HR Assist: AI-Powered Employee Onboarding & HR Query Chatbot.
+  
+Overview:
+This project is an AI-powered HR chatbot that helps employees at Infosys quickly access HR-related information, including company policies, leave details, IT setup, and payroll queries.
+The chatbot can fetch answers from a structured HR FAQs dataset and use AI (GPT-4) to respond to complex queries.
+  
+--> Reduces HR workload by automating responses to repetitive queries.
+--> Speeds up onboarding by providing new employees with step-by-step guidance.
+--> Enhances employee experience by offering 24/7 assistance.
