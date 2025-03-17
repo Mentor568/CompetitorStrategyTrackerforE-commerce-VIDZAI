@@ -1,0 +1,53 @@
+import streamlit as st
+import openai
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# OpenAI API Key (store in .env file)
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+def get_response(user_input):
+    """Generate response from OpenAI GPT model."""
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are an admission assistant. Provide details about courses, fees, and admission process."},
+            {"role": "user", "content": user_input},
+        ]
+    )
+    return response['choices'][0]['message']['content']
+
+# Streamlit Page Configuration
+st.set_page_config(page_title="🎓 Student Admission Chatbot", layout="wide")
+
+st.title("🎓 Student Admission Chatbot")
+st.write("Ask about courses, fees, and the admission process!")
+
+# Session State to Maintain Chat History
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Display Chat History
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# User Input
+user_input = st.chat_input("Ask me anything...")
+
+if user_input:
+    # Append user message to chat history
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+
+    # Get Chatbot Response
+    response = get_response(user_input)
+
+    # Append chatbot response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
