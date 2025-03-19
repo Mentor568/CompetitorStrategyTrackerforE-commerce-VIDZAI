@@ -1,6 +1,9 @@
-import pandas as pd
+import json
 import time
 import os
+from datetime import datetime
+
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -9,12 +12,20 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Initialize CSV file if it doesn't exist
-if not os.path.exists("reviews.csv"):
-    pd.DataFrame(columns=["product_name", "reviews", "source"]).to_csv("reviews.csv", index=False)
+# Define product links
+links = {
+    "Samsung 80 cm (32 inches) HD Ready Smart LED TV UA32T4380AKXXL (Glossy Black)" : "https://amzn.in/d/5Z9eft3",
+    "Apple iPhone 16 (Black, 128 GB)": "https://amzn.in/d/7ibZClF",
+    "Noise Pro 6 Max Smart Watch": "https://amzn.in/d/93MA7yU",
+    "Crompton Optimus 100 Litres Desert Air Cooler for home": "https://amzn.in/d/8T6mZIS",
+    "LG 322 L 3 Star Frost-Free Smart Inverter Double Door Refrigerator": "https://amzn.in/d/01AEIEL"
+}
 
-def scrape_reviews(reviews_link, product_name):
-    # Configure Chrome options
+# Initialize CSV file if it doesn't exist
+if not os.path.exists("competitor_data.csv"):
+    pd.DataFrame(columns=["product_name", "Price", "Discount", "Date", "source"]).to_csv("competitor_data.csv", index=False)
+
+def scrape_product_data(link):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -22,62 +33,64 @@ def scrape_reviews(reviews_link, product_name):
     options.add_argument("--disable-gpu")
     options.add_argument("--lang=en")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-software-rasterizer")  # Suppress WebGL warning
 
-    # Initialize WebDriver
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()), options=options
-    )
-    driver.set_window_size(1920, 1080)
-    driver.get(reviews_link)
-    reviews_data = []
-    wait = WebDriverWait(driver, 10)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    driver.get(link)
+    product_data = {}
     time.sleep(5)
 
-    # Retry logic for page loading
-    retry = 0
-    while retry < 3:
-        try:
-            driver.save_screenshot("screenshot.png")
-            wait.until(EC.presence_of_element_located((By.ID, "cm-cr-dp-review-list")))
-            break
-        except Exception as e:
-            print(f"Retry {retry + 1}: {e}")
-            retry += 1
-            driver.get(reviews_link)
-            time.sleep(5)
-
-    # Extract reviews
+    # Extract product price
     try:
-        reviews = driver.find_element(By.ID, "cm-cr-dp-review-list")
-        reviews = reviews.find_elements(By.TAG_NAME, "li")
-        for item in reviews:
-            review_text = item.get_attribute("innerText")
-            reviews_data.append({"product_name": product_name, "reviews": review_text, "source": "Amazon"})
-    except Exception as e:
-        print(f"Error extracting reviews: {e}")
+        price_elem = driver.find_element(
+            By.XPATH,
+            '//*[@id="corePriceDisplay_desktop_feature_div"]/div[1]/span[3]/span[2]/span[2]',
+        )
+        product_data["selling price"] = int("".join(price_elem.text.strip().split(",")))
+    except:
+        try:
+            price_elem = driver.find_element(By.CSS_SELECTOR, ".a-price-whole")
+            product_data["selling price"] = int("".join(price_elem.text.strip().split(",")))
+        except:
+            product_data["selling price"] = 0
 
+    # Extract original price
+    try:
+        original_price = driver.find_element(By.XPATH, '//*[@id="corePriceDisplay_desktop_feature_div"]/div[2]/span/span[1]/span[2]/span/span[2]').text
+        product_data["original price"] = int("".join(original_price.strip().split(",")))
+    except:
+        product_data["original price"] = 0
+
+    # Extract discount
+    try:
+        discount = driver.find_element(By.XPATH, '//*[@id="corePriceDisplay_desktop_feature_div"]/div[1]/span[2]')
+        product_data["discount"] = discount.text.strip()
+    except:
+        product_data["discount"] = "0%"
+
+    # Add date
+    product_data["date"] = time.strftime("%Y-%m-%d")
     driver.quit()
-    return reviews_data
+    return product_data
 
-# List of review page links and corresponding product names
-review_links = {
-    "LG 108 cm (43 inches) 4K Ultra HD Smart LED TV": "https://www.amazon.in/Lenovo-IdeaPad-13420H-Backlit-82XD003NIN/dp/B0C9HTBMLW/ref=sr_1_3?crid=3I314GGGAMRAL&dib=eyJ2IjoiMSJ9.ZRrDvDIqrXzWnVOfzFzg7F8MBlYTCsL41UKf-ra1e3ldVJI0KpQNEB2YM3Af-SibI1fl5-m4PlYjOAnxWzyam9LbOJh9o6aY5pxft8jvkfzxeTOGwoAf_5sgw5Nj_XbmAJXtRItGuGeUPEOHtYG7TL5AD0FYIcvUjoZNEEHxKX7Ti4kwNgR4Xo2dEkYGulPAehlSJp0x5kL1cze0HU9RHnTe2oZzpdTqSxkr5HYsxx0.9Y_CgizCCY9CObSIsim0YSKg6usSLlYjdNvzl8MAaMI&dib_tag=se&keywords=lenovo%2Bideapad%2Bslim%2B5%2B13th%2Bgen%2Bintel%2Bcore%2Bi5%2B14%22(35.5cm)&nsdOptOutParam=true&qid=1742303424&sprefix=%2Caps%2C213&sr=8-3&th=1#customerReviews",
-    "Samsung Galaxy S23 5G(Phantom Black, 128 GB)": "https://www.amazon.in/dp/B0BT9DVZLZ?ref=cm_sw_r_cp_ud_dp_J979JS5TZNNNNT5W0GH5&ref_=cm_sw_r_cp_ud_dp_J979JS5TZNNNNT5W0GH5&social_share=cm_sw_r_cp_ud_dp_J979JS5TZNNNNT5W0GH5&th=1#customerReviews",
-    "Lenovo IdeaPad Slim 5 13th Gen Intel Core i5 14\"(35.5cm)": "https://www.amazon.in/dp/B0C9HTBMLW?ref=cm_sw_r_cp_ud_dp_AQ2GQVECESG99GWAZ59D&ref_=cm_sw_r_cp_ud_dp_AQ2GQVECESG99GWAZ59D&social_share=cm_sw_r_cp_ud_dp_AQ2GQVECESG99GWAZ59D&th=1#customerReviews",
-    "JBL Tune 760NC Active  Noise Cancelling": "https://www.amazon.in/dp/B096FYLJ6M?ref=cm_sw_r_cp_ud_dp_WCG91B58JDYPCKG5TPXB&ref_=cm_sw_r_cp_ud_dp_WCG91B58JDYPCKG5TPXB&social_share=cm_sw_r_cp_ud_dp_WCG91B58JDYPCKG5TPXB&th=1#customerReviews",
-    "LG 322 L 3 Star Frost-Free Smart Inverter Double Door Refrigerator": "https://www.amazon.in/LG-Frost-Free-Refrigerator-GL-S342SDSX-Convertible/dp/B0C8NTDY55/ref=sr_1_3?crid=60KI0WLRMZRD&dib=eyJ2IjoiMSJ9.knGwNgOdGUWLTblYSbhy4Pe8kmojxOLODG9j8ZQ-hpFF5lvJB_STTW1qCepZJXYh0gXLneIuJVNIBGJqcP3o7bcQqVh0W0-5JQgR5WWiWEz0i9tPRnd8TkELEMTJ7vdNsZfBFxBqojfwaWKIHCJGGdSvmBD64mLkabhbqa_8EQdLIFCLND4UWE5BNSEieOrF55L8KHjArooLk21xK_MxiEn1baMd-Lgq0DFiPbUUFwI.B7sZEaI0LNALVkesefb0xbdclqdRUWd_eKlZESbe49M&dib_tag=se&keywords=lg%2B322%2Bl%2B3%2Bstar%2Bfrost-free%2Bsmart%2Binverter%2Bdouble%2Bdoor%2Brefrigerator&nsdOptOutParam=true&qid=1742308307&sprefix=%2Caps%2C188&sr=8-3&th=1#customerReviews",
-    "USHA Maxx Air Ultra 400MM Table Fan (Light Blue)": "https://www.amazon.in/dp/B0C2V2JVPV?ref=cm_sw_r_cp_ud_dp_XQ6RQN767HFW9SZRAK8Z&ref_=cm_sw_r_cp_ud_dp_XQ6RQN767HFW9SZRAK8Z&social_share=cm_sw_r_cp_ud_dp_XQ6RQN767HFW9SZRAK8Z&th=1#customerReviews"
-}
+# Main loop to scrape data for each product
+for product_name, link in links.items():
+    product_data = scrape_product_data(link)
 
-# Main loop to scrape reviews for each product
-all_reviews = []
-for product_name, reviews_link in review_links.items():
-    print(f"Scraping reviews for: {product_name}")
-    reviews_data = scrape_reviews(reviews_link, product_name)
-    all_reviews.extend(reviews_data)
+    # Load existing data from CSV file
+    price = json.loads(pd.read_csv("competitor_data.csv").to_json(orient="records"))
 
-# Save all reviews to CSV
-pd.DataFrame(all_reviews).to_csv("reviews.csv", index=False)
+    # Append new data
+    price.append(
+        {
+            "product_name": product_name,
+            "Price": product_data["selling price"],
+            "Discount": product_data["discount"],
+            "Date": datetime.now().strftime("%Y-%m-%d"),
+            "source": "Amazon",
+        }
+    )
 
-print("All reviews extraction completed and data saved to 'reviews.csv'.")
+    # Save updated data to CSV file
+    pd.DataFrame(price).to_csv("competitor_data.csv", mode="w", header=True, index=False)
+
+print("Scraping completed and data saved to CSV file.")
