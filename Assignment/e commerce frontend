@@ -1,0 +1,50 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# Set Streamlit Page Config
+st.set_page_config(page_title="E-Commerce Competitor Strategy Dashboard", layout="wide")
+
+# Sidebar: Product Selection
+st.sidebar.header("Select a Product")
+product = st.sidebar.selectbox("Choose a product to analyze:", ["Product A", "Product B", "Product C"])
+
+# Main Title
+st.title("📊 E-Commerce Competitor Strategy Dashboard")
+
+# Sample Data
+data = {
+    "Competitor": ["Competitor A", "Competitor B", "Competitor C"],
+    "Price": [100, 120, 95],
+    "Discount": [10, 15, 5],
+    "Sentiment": ["Positive", "Neutral", "Negative"],
+}
+
+df = pd.DataFrame(data)
+
+# Display Competitor Analysis Table
+st.subheader(f"Competitor Analysis for {product}")
+st.dataframe(df)
+
+# Customer Sentiment Analysis
+st.subheader("Customer Sentiment Analysis")
+
+# Sentiment Data
+sentiment_data = pd.DataFrame({
+    "Sentiment": ["Positive", "Negative"],
+    "Count": [2, 2]
+})
+
+# Sentiment Bar Chart
+fig = px.bar(sentiment_data, x="Sentiment", y="Count", title="Sentiment Analysis Results", text="Count")
+st.plotly_chart(fig, use_container_width=True)
+
+# Strategic Recommendations
+st.subheader("📌 Strategic Recommendations")
+st.write(
+    """
+    - **Competitor A** offers a lower price with moderate discount. Consider adjusting pricing or increasing marketing efforts.
+    - **Competitor B** has the highest price but gives more discounts. A potential opportunity to offer better deals.
+    - **Competitor C** has the lowest price but limited discounts. You may focus on differentiating with value-added services.
+    """
+)
