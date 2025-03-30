@@ -1,0 +1,28 @@
+import csv
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+
+# Mock data collection for demonstration (replace with actual scraping)
+def collect_data():
+    # Example product data
+    products = [
+        {"product_name": "Laptop X", "price": 999, "discount": 10, "reviews": "Great product!", "source": "example.com"}
+    ]
+    
+    # Save to CSV files
+    with open("prices.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["product_name", "price", "discount", "date", "source"])
+        for product in products:
+            writer.writerow([product["product_name"], product["price"], product["discount"], datetime.now(), product["source"]])
+    
+    with open("reviews.csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["product_name", "reviews", "source"])
+        for product in products:
+            writer.writerow([product["product_name"], product["reviews"], product["source"]])
+
+if __name__ == "__main__":
+    collect_data()
